@@ -10,14 +10,14 @@ collection practises what it teaches.
 **The AI doesn't know what you meant — a vague brief selects a *space* of products, and the agent
 picks one without telling you it picked.**
 
-The student sees one nine-word brief produce three different, individually defensible products.
+The student sees one eight-word brief produce three different, individually defensible products.
 Then they add plain-language spec lines and watch the space collapse: each line rules products out,
 until one remains — at which point they have programmed, in English, without noticing.
 
 **The "wait, what?" moment** (if a build doesn't produce this, it isn't finished):
 
 > All three products sit side by side under the same brief, each captioned with its perfectly
-> reasonable reading of the same nine words — and a line of text says: **none of them misheard
+> reasonable reading of the same eight words — and a line of text says: **none of them misheard
 > you.** The ambiguity was never in the agent.
 
 Secondary beats, both mandatory:
@@ -38,7 +38,7 @@ Single column, max-width ~68em:
    editable; the toy is about what happens *after* those words leave your mouth.
 2. **Three product panels** in a row (purple cards — the agent's side), collapsing to one column
    below 820px. Each panel: product name, a small pure-CSS mockup, a caption *"How it read your
-   nine words"*, and a status badge (`VALID` / `RULED OUT`).
+   eight words"*, and a status badge (`VALID` / `RULED OUT`).
 3. **The spec builder** (teal card): six toggle chips, each one plain-language "done means" line.
    Heading: *"Now say what you meant — add the words you thought were obvious."* Plus a Reset.
 4. **The verdict band** (`role="status" aria-live="polite"`): survivor count and the state text.
@@ -46,7 +46,7 @@ Single column, max-width ~68em:
 
 ## 3. The three products
 
-| | Name | Mockup shows | "How it read your nine words" |
+| | Name | Mockup shows | "How it read your eight words" |
 |---|---|---|---|
 | A | **Even Split** | total + people inputs, big per-head figure | "split" = divide equally · "bills" = tonight's one bill · "people" = whoever's at the table |
 | B | **House Ledger** | named housemates with running +/− balances, add-expense button | "split" = share ongoing costs · "bills" = rent, wifi, power · "people" = named housemates with a history |

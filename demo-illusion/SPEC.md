@@ -25,9 +25,9 @@ by zero — live.
 Secondary beats, all mandatory:
 
 - **The failures are real, never staged.** The embedded app is implemented exactly as naively as
-  a one-shot would write it (three lines: parse, divide, print). Simulated users put real values
+  a one-shot would write it (two lines: divide, then print). Simulated users put real values
   into the real inputs and the page runs the real code — `$NaN`, `$Infinity`, `$-21.13`,
-  `$2.5e+23` are the app's actual output. The app's entire brain is shown as a code snippet in
+  `$8.333333333333333e+22` are the app's actual output. The app's entire brain is shown as a code snippet in
   the closing card, so nobody can claim the toy cheated.
 - **The failures become sentences.** After the last user, a teal card converts each failure into
   one plain-language done-means bullet — purple wreckage turning into teal spec lines, the

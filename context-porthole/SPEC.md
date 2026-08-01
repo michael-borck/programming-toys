@@ -74,7 +74,7 @@ Task sent: *"Add a 'settle up' screen showing who pays whom."*
 
 | State | Band | Text (spirit) |
 |---|---|---|
-| Before first send | neutral | You know 7 things. Count what the porthole card shows: 4 written lines and one message. That's the whole delivery. |
+| Before first send | neutral | You know 7 things. Count what the porthole card shows: 3 written lines and one message. That's the whole delivery. |
 | After a send, mistakes > 0 | bad | N mistakes — every one traces to a fact that lived only in your head. **It didn't ignore you. It never heard you.** Click a fact to write it down. |
 | Mistakes = 0 | good | Every mistake was a missing sentence. The amber line stays: what's left isn't a mistake — it's judgement, and it doesn't fit through any porthole. |
 

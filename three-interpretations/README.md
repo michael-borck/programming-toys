@@ -2,7 +2,7 @@
 
 **Kills:** "the AI knows what I meant."
 
-One nine-word brief — *"Make a tool that helps people split bills."* — and the three different,
+One eight-word brief — *"Make a tool that helps people split bills."* — and the three different,
 individually defensible products it produces. None of the agents misheard; the ambiguity was in
 your head. Toggle plain-language spec lines and watch the space of valid products collapse from
 three to one — at which point you've programmed, in English, without noticing. Pick a
