@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Confidence Dial — fluency is a style, not a signal</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:#111a2e; --panel2:#0e1626; --line:#22304d;
+    --ink:#e6edf7; --muted:#93a4c3;
+    --accent:#fbbf24; --good:#34d399; --warn:#fbbf24; --bad:#f87171;
+    --user:#2dd4bf; --agent:#a78bfa;
+    --fs:16px;
+  }
+  body.present{--fs:20px;}
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:radial-gradient(1200px 800px at 30% -10%, #16223c 0%, var(--bg) 55%);
+    color:var(--ink); font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    font-size:var(--fs); line-height:1.5; min-height:100vh; padding:1.5em 1em 3em;
+  }
+  main{max-width:56em; margin:0 auto; display:flex; flex-direction:column; gap:1em;}
+  header{text-align:center; margin-bottom:.5em;}
+  header h1{font-size:1.6em; letter-spacing:.3px;}
+  header p{color:var(--muted); font-size:.95em; max-width:36em; margin:.35em auto 0;}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 16px;}
+  h3{font-size:.72em; text-transform:uppercase; letter-spacing:1.2px; color:var(--muted); margin-bottom:.6em;}
+  .role-agent{border-color:color-mix(in srgb, var(--agent) 45%, var(--line));}
+  .role-agent h3{color:var(--agent);}
+  .voice{font-style:italic; color:var(--muted);}
+  .voice b{color:var(--ink); font-style:normal;}
+
+  .claims{display:flex; flex-direction:column; gap:.7em;}
+  .claim{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:.8em 1em;}
+  .claim .text{margin-bottom:.6em;}
+  .claim .text .q{color:var(--agent);}
+  .grades{display:flex; gap:.5em;}
+  button.grade{
+    font:inherit; font-size:.88em; color:var(--muted); background:var(--panel2);
+    border:1px solid var(--line); border-radius:99px; padding:.3em .95em; cursor:pointer;
+  }
+  button.grade:hover{color:var(--ink);}
+  button.grade[aria-pressed="true"]{
+    color:var(--ink); border-color:#3b82f6; background:linear-gradient(180deg,#1a2a4a,#12203d);
+    box-shadow:0 0 0 1px #3b82f655;
+  }
+  button.grade[aria-pressed="true"]::before{content:"● "; color:var(--user); font-size:.8em;}
+  .strip{display:none; margin-top:.65em; border-top:1px dashed var(--line); padding-top:.55em;
+    font-size:.88em;}
+  .claim.revealed .strip{display:block;}
+  .strip .v{font-weight:800;}
+  .strip .v.true{color:var(--good);}
+  .strip .v.false{color:var(--bad);}
+  .strip .you{color:var(--muted);}
+  .strip .you b{color:var(--ink);}
+  .strip .how{display:block; color:var(--user); margin-top:.15em;}
+  .claim.revealed{border-color:color-mix(in srgb, var(--line) 100%, transparent);}
+  .claim.revealed.got{border-color:color-mix(in srgb, var(--good) 35%, var(--line));}
+  .claim.revealed.missed{border-color:color-mix(in srgb, var(--bad) 35%, var(--line));}
+
+  .controls{display:flex; gap:.6em; flex-wrap:wrap;}
+  button.act{
+    font:inherit; font-size:.95em; color:var(--ink); background:linear-gradient(180deg,#1a2a4a,#12203d);
+    border:1px solid #3b82f6; border-radius:9px; padding:.5em 1.1em; cursor:pointer;
+  }
+  button.act:disabled{opacity:.45; cursor:default;}
+  button.ghost{
+    font:inherit; font-size:.95em; color:var(--muted); background:none;
+    border:1px solid var(--line); border-radius:9px; padding:.5em 1.1em; cursor:pointer;
+  }
+  button.ghost:hover{color:var(--ink);}
+
+  .verdict{border-radius:14px; border:1px solid var(--line); padding:14px 16px; background:var(--panel);}
+  .verdict .count{font-size:.72em; text-transform:uppercase; letter-spacing:1.2px; color:var(--muted); margin-bottom:.35em;}
+  .verdict .msg{font-size:1.02em;}
+  .verdict.scored{border-color:color-mix(in srgb, var(--warn) 55%, var(--line));}
+  .verdict.scored .count{color:var(--warn);}
+
+  .closing{color:var(--muted); font-size:.92em;}
+  .closing b{color:var(--ink);}
+  .closing ul{list-style:none; margin:.5em 0; display:flex; flex-direction:column; gap:.25em;}
+  .closing li{padding-left:1.4em; position:relative;}
+  .closing li::before{content:"→"; position:absolute; left:.1em; color:var(--user);}
+  footer{text-align:center; color:var(--muted); font-size:.8em; margin-top:1.5em;}
+  footer a{color:var(--user);}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Confidence Dial</h1>
+    <p>Eight claims from one report, one voice. Four are true. Grade each one — then find out
+    what fluency is worth.</p>
+  </header>
+
+  <section class="card role-agent" aria-label="The report">
+    <h3>Your agent, end of day</h3>
+    <p class="voice"><b>Agent:</b> "Great progress on the settle-up feature today. Quick status
+    before I wrap up:"</p>
+  </section>
+
+  <div class="claims" id="claims"></div>
+
+  <section class="card">
+    <div class="controls">
+      <button class="act" id="reveal" disabled>Grade 8 more to reveal</button>
+      <button class="ghost" id="reset">Start over ⟲</button>
+    </div>
+  </section>
+
+  <section class="verdict" id="verdict" role="status" aria-live="polite">
+    <p class="count" id="v-count">Ungraded</p>
+    <p class="msg" id="v-msg">Read each claim the way you'd read a chat message from your agent.
+      Trust it or doubt it — commit.</p>
+  </section>
+
+  <section class="card closing" id="closing" hidden>
+    <p><b>What would have actually worked</b> — none of it is clever, all of it is cheap:</p>
+    <ul>
+      <li>Run it yourself.</li>
+      <li>Make the check fail once — a check you've never seen fail is itself unchecked.</li>
+      <li>Ask: "show me the evidence."</li>
+      <li>Ask a second agent to critique the first.</li>
+      <li>Ask: "what would make this claim false?"</li>
+    </ul>
+    <p><b>The lesson:</b> the model writes true things and false things with the same fluency,
+    because fluency is how it writes <i>everything</i> — it was never evidence. Stop grading
+    prose. Start running checks.</p>
+  </section>
+
+  <footer>
+    Part of <a href="../">programming-toys</a> · pairs with Lab 7 — <i>Trust, Then Verify</i> ·
+    nothing leaves this page
+  </footer>
+</main>
+
+<script>
+"use strict";
+var CLAIMS = [
+  { t: "The settle-up screen is done and every check passes.",
+    truth: false, how: "Run the checks yourself and read what each one does — one was never wired up." },
+  { t: "I think the rounding is right now, though it'd be worth re-running the checklist.",
+    truth: true, how: "Re-run the checklist: green, and the check is real. Hedging isn't a verdict either." },
+  { t: "Shares now sum to the exact total in all 1,024 test combinations.",
+    truth: false, how: "Say: “show me the 1,024 combinations.” There is no such suite. Specific numbers are free to type." },
+  { t: "The copy button works in Chrome, Firefox and Safari.",
+    truth: false, how: "Open it in Safari — two minutes. Nobody ever did; it fails there. A list isn't a test log." },
+  { t: "Dark mode is unchanged — I didn't touch it.",
+    truth: true, how: "The flight recorder settles absence claims: the diff contains no dark-mode files." },
+  { t: "Load time improved 34% after I optimised the images.",
+    truth: false, how: "Look in the folder. The project contains no images. Precise and plausible is still just prose." },
+  { t: "The default tip is 10%, as the spec requires.",
+    truth: true, how: "One glance at the running app. Boring claims are usually true — you still looked." },
+  { t: "I removed the sign-in screen the client hated; the code is gone.",
+    truth: true, how: "Search the project for it: gone. Old scars make you over-doubt; the check doesn't care." },
+];
+
+var grades = new Array(CLAIMS.length).fill(null);
+var revealed = false;
+var claimsEl = document.getElementById("claims");
+var revealBtn = document.getElementById("reveal");
+
+CLAIMS.forEach(function (c, i) {
+  var div = document.createElement("div");
+  div.className = "claim";
+  div.innerHTML =
+    "<p class=\"text\"><span class=\"q\">" + (i + 1) + ".</span> <span class=\"ct\"></span></p>" +
+    "<div class=\"grades\">" +
+    "<button class=\"grade\" type=\"button\" aria-pressed=\"false\" data-g=\"trust\">Trust</button>" +
+    "<button class=\"grade\" type=\"button\" aria-pressed=\"false\" data-g=\"doubt\">Doubt</button>" +
+    "</div>" +
+    "<div class=\"strip\"></div>";
+  div.querySelector(".ct").textContent = "“" + c.t + "”";
+  div.querySelectorAll(".grade").forEach(function (b) {
+    b.addEventListener("click", function () {
+      if (revealed) return;
+      grades[i] = b.dataset.g;
+      div.querySelectorAll(".grade").forEach(function (x) {
+        x.setAttribute("aria-pressed", String(x === b));
+      });
+      var left = grades.filter(function (g) { return g === null; }).length;
+      revealBtn.disabled = left > 0;
+      revealBtn.textContent = left > 0 ?
+        "Grade " + left + " more to reveal" : "Reveal ▸";
+    });
+  });
+  claimsEl.appendChild(div);
+});
+
+revealBtn.addEventListener("click", function () {
+  if (revealed) return;
+  revealed = true;
+  var score = 0;
+  document.querySelectorAll(".claim").forEach(function (div, i) {
+    var c = CLAIMS[i];
+    var yourCall = grades[i] === "trust";
+    var right = yourCall === c.truth;
+    if (right) score++;
+    div.classList.add("revealed", right ? "got" : "missed");
+    var strip = div.querySelector(".strip");
+    strip.innerHTML = "<span class=\"v " + (c.truth ? "true" : "false") + "\">" +
+      (c.truth ? "✓ TRUE" : "✗ FALSE") + "</span> <span class=\"you\">— you said <b>" +
+      grades[i] + "</b>, " + (right ? "correct" : "wrong") + ".</span>" +
+      "<span class=\"how\"></span>";
+    strip.querySelector(".how").textContent = "The check that settles it: " + c.how;
+  });
+  var v = document.getElementById("verdict");
+  v.className = "verdict scored";
+  document.getElementById("v-count").textContent = "Your score: " + score + " of 8 · a coin scores 4";
+  var msg;
+  if (score <= 4) {
+    msg = "A coin ties or beats you — and you were trying. The words carried nothing. They were " +
+      "never going to: it writes true and false in the same voice.";
+  } else if (score <= 6) {
+    msg = "Barely above the coin — reading carefully, on high alert, suspecting a trick. That " +
+      "thin margin is everything fluency-grading will ever pay.";
+  } else {
+    msg = "Sharp. Now count what those eight judgements cost you — and notice a checklist " +
+      "settles all eight in seconds, every time, without being clever.";
+  }
+  document.getElementById("v-msg").textContent = msg + " The fix isn't better guessing.";
+  document.getElementById("closing").hidden = false;
+});
+
+document.getElementById("reset").addEventListener("click", function () { location.reload(); });
+
+if (new URLSearchParams(location.search).has("present")) document.body.classList.add("present");
+</script>
+</body>
+</html>
