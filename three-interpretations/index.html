@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Three Interpretations — the AI doesn't know what you meant</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:#111a2e; --panel2:#0e1626; --line:#22304d;
+    --ink:#e6edf7; --muted:#93a4c3;
+    --accent:#fbbf24; --good:#34d399; --warn:#fbbf24; --bad:#f87171;
+    --user:#2dd4bf; --agent:#a78bfa;
+    --fs:16px;
+  }
+  body.present{--fs:20px;}
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:radial-gradient(1200px 800px at 30% -10%, #16223c 0%, var(--bg) 55%);
+    color:var(--ink); font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    font-size:var(--fs); line-height:1.5; min-height:100vh; padding:1.5em 1em 3em;
+  }
+  main{max-width:68em; margin:0 auto; display:flex; flex-direction:column; gap:1em;}
+  header{text-align:center; margin-bottom:.5em;}
+  header h1{font-size:1.6em; letter-spacing:.3px;}
+  header p{color:var(--muted); font-size:.95em; max-width:38em; margin:.35em auto 0;}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 16px;}
+  h3{font-size:.72em; text-transform:uppercase; letter-spacing:1.2px; color:var(--muted); margin-bottom:.6em;}
+  .role-user{border-color:color-mix(in srgb, var(--user) 45%, var(--line));}
+  .role-user h3{color:var(--user);}
+  .role-agent{border-color:color-mix(in srgb, var(--agent) 45%, var(--line));}
+  .role-agent h3{color:var(--agent);}
+
+  .brief-quote{font-size:1.25em; font-weight:600; text-align:center; padding:.4em 0 .15em;}
+  .brief-sub{text-align:center; color:var(--muted); font-size:.9em;}
+
+  .panels{display:grid; grid-template-columns:repeat(3,1fr); gap:1em;}
+  @media (max-width:820px){ .panels{grid-template-columns:1fr;} }
+
+  .product{display:flex; flex-direction:column; gap:.7em; transition:opacity .25s, filter .25s; position:relative;}
+  .product .head{display:flex; align-items:baseline; justify-content:space-between; gap:.5em;}
+  .product .name{font-weight:700; font-size:1.05em;}
+  .badge{font-size:.68em; text-transform:uppercase; letter-spacing:1px; padding:.15em .55em;
+    border-radius:99px; border:1px solid; white-space:nowrap;}
+  .badge.valid{color:var(--good); border-color:color-mix(in srgb, var(--good) 55%, transparent);}
+  .badge.out{color:var(--bad); border-color:color-mix(in srgb, var(--bad) 55%, transparent);}
+  .product.out{opacity:.5; filter:grayscale(.7);}
+  .killed-by{display:none; font-size:.82em; color:var(--bad); border:1px dashed
+    color-mix(in srgb, var(--bad) 55%, transparent); border-radius:8px; padding:.4em .6em;}
+  .product.out .killed-by{display:block;}
+  .reading{font-size:.82em; color:var(--muted); border-top:1px solid var(--line); padding-top:.6em; margin-top:auto;}
+  .reading b{color:var(--ink); font-weight:600;}
+
+  /* mockups — pure CSS product sketches */
+  .mock{background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:.8em;
+    display:flex; flex-direction:column; gap:.5em; font-size:.85em; min-height:13.5em;}
+  .mock .bar{display:flex; justify-content:space-between; align-items:center; gap:.5em;}
+  .mock .apptitle{font-weight:700; font-size:.9em; color:var(--agent);}
+  .field{display:flex; justify-content:space-between; align-items:center; background:var(--panel);
+    border:1px solid var(--line); border-radius:7px; padding:.35em .6em;}
+  .field span:first-child{color:var(--muted);}
+  mono, .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  .bignum{text-align:center; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:1.9em; padding:.25em 0; color:var(--ink);}
+  .bignum small{display:block; font-size:.38em; font-family:inherit; color:var(--muted); letter-spacing:1px;}
+  .row{display:flex; justify-content:space-between; align-items:center; padding:.3em .1em;
+    border-bottom:1px dashed var(--line); gap:.5em;}
+  .row:last-child{border-bottom:none;}
+  .pos{color:var(--good);} .neg{color:var(--bad);}
+  .pill{font-size:.78em; border:1px solid var(--line); border-radius:99px; padding:.05em .5em;
+    color:var(--user); white-space:nowrap;}
+  .tabs{display:flex; gap:.4em;}
+  .tab{font-size:.8em; padding:.2em .6em; border-radius:7px; border:1px solid var(--line); color:var(--muted);}
+  .tab.on{color:var(--ink); border-color:#3b82f6; background:linear-gradient(180deg,#1a2a4a,#12203d);}
+  .ghostbtn{border:1px dashed var(--line); border-radius:7px; text-align:center; padding:.35em;
+    color:var(--muted); font-size:.85em;}
+  .mocktotal{border-top:1px solid var(--line); padding-top:.45em; display:flex;
+    justify-content:space-between; font-size:.82em; color:var(--muted); flex-wrap:wrap; gap:.3em;}
+
+  .chips{display:flex; flex-wrap:wrap; gap:.55em;}
+  button.chip{
+    font:inherit; font-size:.9em; color:var(--ink); background:var(--panel2);
+    border:1px solid var(--line); border-radius:99px; padding:.45em .95em; cursor:pointer;
+  }
+  button.chip:hover{border-color:color-mix(in srgb, var(--user) 55%, var(--line));}
+  button.chip[aria-pressed="true"]{
+    border-color:#3b82f6; background:linear-gradient(180deg,#1a2a4a,#12203d);
+    box-shadow:0 0 0 1px #3b82f655;
+  }
+  button.chip[aria-pressed="true"]::before{content:"✓ "; color:var(--user);}
+  .spec-foot{display:flex; justify-content:space-between; align-items:center; margin-top:.8em; gap:1em; flex-wrap:wrap;}
+  .spec-foot p{color:var(--muted); font-size:.85em;}
+  button.reset{font:inherit; font-size:.85em; color:var(--muted); background:none;
+    border:1px solid var(--line); border-radius:8px; padding:.35em .8em; cursor:pointer;}
+  button.reset:hover{color:var(--ink);}
+
+  .verdict{border-radius:14px; border:1px solid var(--line); padding:14px 16px; background:var(--panel);}
+  .verdict .count{font-size:.72em; text-transform:uppercase; letter-spacing:1.2px; color:var(--muted); margin-bottom:.35em;}
+  .verdict .msg{font-size:1.02em;}
+  .verdict .msg b{font-size:1.1em;}
+  .verdict.good{border-color:color-mix(in srgb, var(--good) 55%, var(--line));
+    background:linear-gradient(180deg, color-mix(in srgb, var(--good) 8%, var(--panel)), var(--panel));}
+  .verdict.good .count{color:var(--good);}
+  .verdict.bad{border-color:color-mix(in srgb, var(--bad) 55%, var(--line));
+    background:linear-gradient(180deg, color-mix(in srgb, var(--bad) 8%, var(--panel)), var(--panel));}
+  .verdict.bad .count{color:var(--bad);}
+
+  .closing{color:var(--muted); font-size:.92em;}
+  .closing b{color:var(--ink);}
+  footer{text-align:center; color:var(--muted); font-size:.8em; margin-top:1.5em;}
+  footer a{color:var(--user);}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Three Interpretations</h1>
+    <p>A client gives an AI agent one brief. Three agents build it. Nobody mishears anybody.</p>
+  </header>
+
+  <section class="card role-user" aria-label="The brief">
+    <h3>You say — the whole brief</h3>
+    <p class="brief-quote">“Make a tool that helps people split bills.”</p>
+    <p class="brief-sub">Nine words. You know exactly which product you mean. Read on.</p>
+  </section>
+
+  <section class="panels" aria-label="What three agents built">
+
+    <article class="card role-agent product" id="prod-a">
+      <div class="head">
+        <span class="name">Even Split</span>
+        <span class="badge valid" data-badge>Valid</span>
+      </div>
+      <div class="mock" aria-hidden="true">
+        <div class="bar"><span class="apptitle">⚡ Even Split</span></div>
+        <div class="field"><span>Bill total</span><span class="mono">$142.50</span></div>
+        <div class="field"><span>People</span><span class="mono">−&nbsp;&nbsp;6&nbsp;&nbsp;+</span></div>
+        <div class="bignum">$23.75<small>EACH · TAP TO COPY</small></div>
+      </div>
+      <p class="killed-by" data-killed></p>
+      <p class="reading"><b>How it read your nine words:</b> “split” = divide equally · “bills” =
+        tonight’s one bill · “people” = whoever’s at the table.</p>
+    </article>
+
+    <article class="card role-agent product" id="prod-b">
+      <div class="head">
+        <span class="name">House Ledger</span>
+        <span class="badge valid" data-badge>Valid</span>
+      </div>
+      <div class="mock" aria-hidden="true">
+        <div class="bar"><span class="apptitle">🏠 House Ledger</span>
+          <span class="tabs"><span class="tab on">Balances</span><span class="tab">History</span></span></div>
+        <div class="row"><span>Sam</span><span class="mono pos">+$42.10</span></div>
+        <div class="row"><span>Alex</span><span class="mono neg">−$18.30</span></div>
+        <div class="row"><span>Jo</span><span class="mono neg">−$23.80</span></div>
+        <div class="ghostbtn">＋ Add expense — Wifi · $79/mo · splits 3 ways</div>
+        <div class="mocktotal"><span>Signed in as Sam</span><span>Since March · 47 expenses</span></div>
+      </div>
+      <p class="killed-by" data-killed></p>
+      <p class="reading"><b>How it read your nine words:</b> “split” = share ongoing costs ·
+        “bills” = rent, wifi, power · “people” = named housemates with a history.</p>
+    </article>
+
+    <article class="card role-agent product" id="prod-c">
+      <div class="head">
+        <span class="name">Item-by-Item</span>
+        <span class="badge valid" data-badge>Valid</span>
+      </div>
+      <div class="mock" aria-hidden="true">
+        <div class="bar"><span class="apptitle">🧾 Item-by-Item</span></div>
+        <div class="row"><span>Pad Thai <span class="mono">18.00</span></span><span class="pill">Sam</span></div>
+        <div class="row"><span>Green curry <span class="mono">21.00</span></span><span class="pill">Jo</span></div>
+        <div class="row"><span>Garlic bread <span class="mono">9.50</span></span><span class="pill">Alex · Jo</span></div>
+        <div class="row"><span>Beers ×2 <span class="mono">13.00</span></span><span class="pill">Alex</span></div>
+        <div class="mocktotal"><span>Tip 10% — by share</span>
+          <span class="mono">Sam 19.80 · Alex 19.53 · Jo 28.33</span></div>
+      </div>
+      <p class="killed-by" data-killed></p>
+      <p class="reading"><b>How it read your nine words:</b> “split” = pay for what you had ·
+        “bills” = an itemised receipt · “people” = whoever ordered what.</p>
+    </article>
+
+  </section>
+
+  <section class="card role-user" aria-label="The spec builder">
+    <h3>Now say what you meant — add the words you thought were obvious</h3>
+    <div class="chips" id="chips"></div>
+    <div class="spec-foot">
+      <p>Each line is plain language. Watch what your words do to the agent’s freedom to guess.</p>
+      <button class="reset" id="reset">Reset</button>
+    </div>
+  </section>
+
+  <section class="verdict" id="verdict" role="status" aria-live="polite">
+    <p class="count" id="v-count"></p>
+    <p class="msg" id="v-msg"></p>
+  </section>
+
+  <section class="card closing">
+    <p><b>The lesson:</b> a vague brief doesn’t produce a wrong product — it produces a <b>space</b>
+    of right ones, and the agent picks from it without telling you it picked. Writing down what you
+    meant, precisely enough that a stranger builds the right thing, is programming’s newest
+    notation. It’s called a spec, and you just wrote one with six clicks.</p>
+  </section>
+
+  <footer>
+    Part of <a href="../">programming-toys</a> · pairs with Lab 3 — <i>Say What You Mean</i> ·
+    nothing leaves this page
+  </footer>
+</main>
+
+<script>
+"use strict";
+// verdicts: true = survives this requirement, false = ruled out by it  [A, B, C]
+const CHIPS = [
+  { label: "Usable in 30 seconds at the table",            v: [true,  false, true ] },
+  { label: "No accounts, no sign-in, nothing saved",       v: [true,  false, true ] },
+  { label: "People can owe different amounts",             v: [false, true,  true ] },
+  { label: "Tip and tax split by what each person had",    v: [false, false, true ] },
+  { label: "Remembers who owes whom across months",        v: [false, true,  false] },
+  { label: "Handles recurring bills like rent",            v: [false, true,  false] },
+];
+const PRODUCTS = ["prod-a", "prod-b", "prod-c"];
+const NAMES = ["Even Split", "House Ledger", "Item-by-Item"];
+
+const chipsEl = document.getElementById("chips");
+const selectionOrder = [];   // chip indexes in the order the student turned them on
+
+CHIPS.forEach((chip, i) => {
+  const b = document.createElement("button");
+  b.className = "chip";
+  b.type = "button";
+  b.textContent = chip.label;
+  b.setAttribute("aria-pressed", "false");
+  b.addEventListener("click", () => {
+    const on = b.getAttribute("aria-pressed") === "true";
+    b.setAttribute("aria-pressed", String(!on));
+    if (on) selectionOrder.splice(selectionOrder.indexOf(i), 1);
+    else selectionOrder.push(i);
+    update();
+  });
+  chipsEl.appendChild(b);
+});
+
+document.getElementById("reset").addEventListener("click", () => {
+  selectionOrder.length = 0;
+  chipsEl.querySelectorAll(".chip").forEach(b => b.setAttribute("aria-pressed", "false"));
+  update();
+});
+
+function update() {
+  const survivors = [];
+  PRODUCTS.forEach((id, p) => {
+    const el = document.getElementById(id);
+    const badge = el.querySelector("[data-badge]");
+    const killedEl = el.querySelector("[data-killed]");
+    // first chip (in the order the student selected them) that rules this product out
+    const killer = selectionOrder.find(ci => !CHIPS[ci].v[p]);
+    if (killer === undefined) {
+      survivors.push(p);
+      el.classList.remove("out");
+      badge.textContent = "Valid";
+      badge.className = "badge valid";
+      killedEl.textContent = "";
+    } else {
+      el.classList.add("out");
+      badge.textContent = "Ruled out";
+      badge.className = "badge out";
+      killedEl.textContent = "✗ ruled out — “" + CHIPS[killer].label + "”";
+    }
+  });
+
+  const verdict = document.getElementById("verdict");
+  const count = document.getElementById("v-count");
+  const msg = document.getElementById("v-msg");
+  const n = survivors.length;
+
+  verdict.className = "verdict";
+  if (selectionOrder.length === 0) {
+    count.textContent = "3 of 3 readings valid";
+    msg.innerHTML = "All three are valid. <b>None of them misheard you.</b> The ambiguity is in " +
+      "your head — you know which product you meant, and nothing on this page says which.";
+  } else if (n === 1) {
+    verdict.classList.add("good");
+    count.textContent = "1 reading left — " + NAMES[survivors[0]];
+    msg.innerHTML = "<b>You just programmed.</b> You wrote no code — you eliminated products with " +
+      "words until one remained. That’s a spec. One caveat before you celebrate: build " +
+      NAMES[survivors[0]] + " again tomorrow and it will still differ in everything you didn’t " +
+      "pin — colours, wording, layout. A spec narrows the space; it never closes it. Say what " +
+      "matters. Let the rest float.";
+  } else if (n === 0) {
+    verdict.classList.add("bad");
+    count.textContent = "0 readings left — your spec contradicts itself";
+    msg.innerHTML = "No product can satisfy everything you asked for. Here’s the dangerous part: " +
+      "a real agent <b>won’t stop and tell you that</b>. It will silently drop one of your " +
+      "requirements and build anyway — and you won’t know which one until the demo.";
+  } else {
+    count.textContent = n + " of 3 readings valid";
+    msg.innerHTML = "Narrower. Every line you add does work no agent can do for you — it knows " +
+      "the words you said, not the product you pictured. Keep going until one remains.";
+  }
+}
+
+update();
+if (new URLSearchParams(location.search).has("present")) document.body.classList.add("present");
+</script>
+</body>
+</html>
