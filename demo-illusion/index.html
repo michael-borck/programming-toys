@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo Illusion — it worked for you, once</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:#111a2e; --panel2:#0e1626; --line:#22304d;
+    --ink:#e6edf7; --muted:#93a4c3;
+    --accent:#fbbf24; --good:#34d399; --warn:#fbbf24; --bad:#f87171;
+    --user:#2dd4bf; --agent:#a78bfa;
+    --fs:16px;
+  }
+  body.present{--fs:20px;}
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:radial-gradient(1200px 800px at 30% -10%, #16223c 0%, var(--bg) 55%);
+    color:var(--ink); font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    font-size:var(--fs); line-height:1.5; min-height:100vh; padding:1.5em 1em 3em;
+  }
+  main{max-width:64em; margin:0 auto; display:flex; flex-direction:column; gap:1em;}
+  header{text-align:center; margin-bottom:.5em;}
+  header h1{font-size:1.6em; letter-spacing:.3px;}
+  header p{color:var(--muted); font-size:.95em; max-width:36em; margin:.35em auto 0;}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 16px;}
+  h3{font-size:.72em; text-transform:uppercase; letter-spacing:1.2px; color:var(--muted); margin-bottom:.6em;}
+  .role-user{border-color:color-mix(in srgb, var(--user) 45%, var(--line));}
+  .role-user h3{color:var(--user);}
+  .role-agent{border-color:color-mix(in srgb, var(--agent) 45%, var(--line));}
+  .role-agent h3{color:var(--agent);}
+
+  .cols{display:grid; grid-template-columns:1fr 1fr; gap:1em; align-items:start;}
+  @media (max-width:820px){ .cols{grid-template-columns:1fr;} }
+
+  /* the app, deliberately fixed-width inside a narrowable frame */
+  .frame{overflow:hidden; border-radius:10px; transition:max-width .5s; max-width:100%;}
+  .frame.phone{max-width:15em; border-right:2px dashed var(--bad);}
+  .app{
+    min-width:28em; background:linear-gradient(180deg,#141f38,#101a30);
+    border:1px solid var(--line); border-radius:10px; padding:1em 1.1em;
+    display:flex; flex-direction:column; gap:.7em;
+  }
+  .app .brand{font-weight:800; font-size:1.15em; letter-spacing:.3px;}
+  .app .brand span{color:var(--agent);}
+  .app .tag{color:var(--muted); font-size:.82em; margin-top:-.5em;}
+  .app label{display:flex; justify-content:space-between; align-items:center; gap:.8em;
+    font-size:.9em; color:var(--muted);}
+  .app input{
+    font:inherit; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    color:var(--ink); background:var(--panel2); border:1px solid var(--line); border-radius:7px;
+    padding:.4em .6em; width:13em; max-width:55%; text-align:right;
+  }
+  .app input.flash{border-color:var(--agent);}
+  .app button{
+    font:inherit; font-weight:700; color:#0b1220; background:linear-gradient(180deg,#c4b5fd,var(--agent));
+    border:none; border-radius:8px; padding:.55em 1em; cursor:pointer; white-space:nowrap;
+  }
+  .app .result{
+    text-align:center; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:1.6em; min-height:1.5em; padding:.15em 0; overflow-wrap:anywhere;
+  }
+  .app .result.ok{color:var(--good);}
+  .app .result.broken{color:var(--bad);}
+  .phone-note{display:none; color:var(--bad); font-size:.82em; margin-top:.5em;}
+  .phone-mode .phone-note{display:block;}
+
+  .controls{display:flex; gap:.6em; flex-wrap:wrap; margin-top:.9em;}
+  button.act{
+    font:inherit; font-size:.95em; color:var(--ink); background:linear-gradient(180deg,#1a2a4a,#12203d);
+    border:1px solid #3b82f6; border-radius:9px; padding:.5em 1.1em; cursor:pointer;
+  }
+  button.act:disabled{opacity:.45; cursor:default;}
+  button.ghost{
+    font:inherit; font-size:.95em; color:var(--muted); background:none;
+    border:1px solid var(--line); border-radius:9px; padding:.5em 1.1em; cursor:pointer;
+  }
+  button.ghost:hover{color:var(--ink);}
+
+  .feed{display:flex; flex-direction:column; gap:.55em; min-height:10em;}
+  .entry{display:flex; gap:.7em; align-items:flex-start;}
+  .avatar{
+    flex:none; width:1.9em; height:1.9em; border-radius:50%; display:grid; place-items:center;
+    font-weight:800; font-size:.85em; color:#0b1220; margin-top:.15em;
+  }
+  .entry .who{font-weight:700;}
+  .entry .did{color:var(--muted); font-size:.9em;}
+  .chip{display:inline-block; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:.85em; border:1px solid; border-radius:7px; padding:.1em .5em; margin-top:.2em;
+    overflow-wrap:anywhere;}
+  .chip.ok{color:var(--good); border-color:color-mix(in srgb, var(--good) 55%, transparent);}
+  .chip.broken{color:var(--bad); border-color:color-mix(in srgb, var(--bad) 55%, transparent);}
+  .feed-empty{color:var(--muted); font-size:.88em; font-style:italic;}
+
+  .verdict{border-radius:14px; border:1px solid var(--line); padding:14px 16px; background:var(--panel);}
+  .verdict .count{font-size:.72em; text-transform:uppercase; letter-spacing:1.2px; color:var(--muted); margin-bottom:.35em;}
+  .verdict .msg{font-size:1.02em;}
+  .verdict.good{border-color:color-mix(in srgb, var(--good) 55%, var(--line));}
+  .verdict.good .count{color:var(--good);}
+  .verdict.bad{border-color:color-mix(in srgb, var(--bad) 55%, var(--line));
+    background:linear-gradient(180deg, color-mix(in srgb, var(--bad) 8%, var(--panel)), var(--panel));}
+  .verdict.bad .count{color:var(--bad);}
+
+  .donemeans{display:none;}
+  .donemeans.show{display:block;}
+  .donemeans ul{list-style:none; display:flex; flex-direction:column; gap:.4em;}
+  .donemeans li{padding-left:1.4em; position:relative;}
+  .donemeans li::before{content:"—"; position:absolute; left:.2em; color:var(--user);}
+  .donemeans p{color:var(--muted); font-size:.88em; border-top:1px solid var(--line);
+    margin-top:.7em; padding-top:.6em;}
+
+  .closing{color:var(--muted); font-size:.92em;}
+  .closing b{color:var(--ink);}
+  .closing pre{
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.85em;
+    background:var(--panel2); border:1px solid var(--line); border-radius:8px;
+    padding:.7em .9em; margin:.6em 0; overflow-x:auto; color:var(--ink);
+  }
+  footer{text-align:center; color:var(--muted); font-size:.8em; margin-top:1.5em;}
+  footer a{color:var(--user);}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Demo Illusion</h1>
+    <p>Your agent one-shotted a bill splitter this morning. It works — you watched it work.
+    Ship it Friday?</p>
+  </header>
+
+  <div class="cols">
+    <section class="card role-agent" id="appcard" aria-label="The app">
+      <h3>The one-shot — fresh from the agent</h3>
+      <div class="frame" id="frame">
+        <div class="app">
+          <div class="brand">◆ Split<span>Ease</span></div>
+          <p class="tag">Split any bill in seconds.</p>
+          <label>Bill total <input id="total" inputmode="decimal" aria-label="Bill total"></label>
+          <label>People <input id="people" inputmode="numeric" aria-label="Number of people"></label>
+          <button id="split" type="button">Split it</button>
+          <div class="result" id="result" aria-live="polite">—</div>
+        </div>
+      </div>
+      <p class="phone-note" id="phonenote">Rosa's phone ends here — everything past the dashed
+        line doesn't exist for her.</p>
+      <div class="controls">
+        <button class="act" id="demo">Run the demo ▸</button>
+        <button class="act" id="next">Let a real user in ▸</button>
+        <button class="act" id="all">Let them all in ▸▸</button>
+        <button class="ghost" id="reset">Start over ⟲</button>
+      </div>
+    </section>
+
+    <section class="card" aria-label="Who used it">
+      <h3>Who used it, and what they got</h3>
+      <div class="feed" id="feed"><p class="feed-empty">Nobody yet. Run the demo — it's a good
+        demo.</p></div>
+    </section>
+  </div>
+
+  <section class="verdict" id="verdict" role="status" aria-live="polite">
+    <p class="count" id="v-count">Survived: 0 of 0 users</p>
+    <p class="msg" id="v-msg">Every product you've ever seen demoed felt like this one is about
+      to feel.</p>
+  </section>
+
+  <section class="card role-user donemeans" id="donemeans" aria-label="Done means">
+    <h3>Every failure, rewritten as one plain sentence</h3>
+    <ul>
+      <li>Any input that isn't a number gets a polite message — never NaN.</li>
+      <li>Zero or missing people explains itself — nothing divides by zero.</li>
+      <li>Negative amounts are refused in words, not invoiced.</li>
+      <li>Absurd totals get a sanity check before they get arithmetic.</li>
+      <li>Readable and usable on a phone held in one hand.</li>
+    </ul>
+    <p>That list is what "done" actually meant all along. Writing it <i>after</i> the strangers
+    arrive is damage control. Writing it <i>before</i> the demo is Lab 2. Writing it before the
+    build is Lab 3 — and by then it has a name: a spec.</p>
+  </section>
+
+  <section class="card closing">
+    <p><b>Was the toy cheating?</b> No — every user typed into the real app above, and this is
+    its entire brain, exactly as a one-shot wrote it:</p>
+    <pre>var each = parseFloat(total) / parseInt(people);
+result = "$" + each.toFixed(2) + " each";</pre>
+    <p>It divides. That's all it does, so that's all it can defend. <b>The lesson:</b> "it works"
+    means "it worked for me, once, used the way I imagined." A product is the version that
+    survives everyone else — and the distance between the two is not code, it's judgement:
+    watching strangers, naming failures, defining done.</p>
+  </section>
+
+  <footer>
+    Part of <a href="../">programming-toys</a> · pairs with Lab 2 — <i>The Demo Illusion</i> ·
+    nothing leaves this page
+  </footer>
+</main>
+
+<script>
+"use strict";
+var totalEl = document.getElementById("total");
+var peopleEl = document.getElementById("people");
+var resultEl = document.getElementById("result");
+var frameEl = document.getElementById("frame");
+var appcard = document.getElementById("appcard");
+var feedEl = document.getElementById("feed");
+var vEl = document.getElementById("verdict");
+var vCount = document.getElementById("v-count");
+var vMsg = document.getElementById("v-msg");
+
+// The app's entire brain — shown to the student in the closing card. Never add validation here:
+// the toy's honesty depends on these two lines being exactly as naive as a one-shot.
+function runSplit() {
+  var each = parseFloat(totalEl.value) / parseInt(peopleEl.value, 10);
+  resultEl.textContent = "$" + each.toFixed(2) + " each";
+  var broken = !isFinite(each) || each < 0;
+  resultEl.className = "result " + (broken ? "broken" : "ok");
+  return resultEl.textContent;
+}
+document.getElementById("split").addEventListener("click", runSplit);
+
+var USERS = [
+  { name: "You", color: "#34d399", did: "demo day: 120, split 4 ways", total: "120", people: "4",
+    ok: true, note: "Ship it Friday?" },
+  { name: "Priya", color: "#f472b6", did: "in a hurry — pressed the button with everything empty",
+    total: "", people: "" },
+  { name: "Marcus", color: "#60a5fa", did: "typed the total like a human being",
+    total: "one twenty", people: "4" },
+  { name: "Ana", color: "#fbbf24", did: "ate alone, typed zero people", total: "60", people: "0" },
+  { name: "Sam", color: "#c084fc", did: "entered the refund from a cancelled order",
+    total: "-84.50", people: "4" },
+  { name: "Dee", color: "#f87171", did: "pasted the company-dinner total from a spreadsheet",
+    total: "999999999999999999999999", people: "12" },
+  { name: "Rosa", color: "#2dd4bf", did: "opened it on her phone, on the bus", phone: true },
+];
+
+var nextUser = 0;
+var survived = 0;
+var timer = null;
+
+function addEntry(user, outcomeText, ok) {
+  if (nextUser === 1) feedEl.innerHTML = "";
+  var div = document.createElement("div");
+  div.className = "entry";
+  div.innerHTML = "<span class=\"avatar\"></span><div><span class=\"who\"></span> " +
+    "<span class=\"did\"></span><br><span class=\"chip\"></span></div>";
+  div.querySelector(".avatar").textContent = user.name[0];
+  div.querySelector(".avatar").style.background = user.color;
+  div.querySelector(".who").textContent = user.name;
+  div.querySelector(".did").textContent = "— " + user.did;
+  var chip = div.querySelector(".chip");
+  chip.textContent = (ok ? "✓ " : "✗ ") + outcomeText;
+  chip.className = "chip " + (ok ? "ok" : "broken");
+  feedEl.appendChild(div);
+}
+
+function updateVerdict() {
+  var seen = nextUser;
+  vCount.textContent = "Survived: " + survived + " of " + seen + " user" + (seen === 1 ? "" : "s");
+  if (seen === 0) return;
+  if (seen === 1) {
+    vEl.className = "verdict good";
+    vMsg.textContent = "Flawless. It works — you watched it work. Now let a real user in.";
+  } else if (nextUser < USERS.length) {
+    vEl.className = "verdict bad";
+    vMsg.textContent = "The app hasn't changed since the demo. Keep going.";
+  } else {
+    vEl.className = "verdict bad";
+    vMsg.innerHTML = "<b>Same app. Not one line changed.</b> What changed is that your " +
+      "imagination stopped being the only user. Scroll down — every failure is one plain " +
+      "sentence away from being fixed forever.";
+    document.getElementById("donemeans").classList.add("show");
+  }
+}
+
+function letUserIn() {
+  if (nextUser >= USERS.length) return;
+  var u = USERS[nextUser];
+  nextUser++;
+  if (u.phone) {
+    frameEl.classList.add("phone");
+    appcard.classList.add("phone-mode");
+    addEntry(u, "can only see half the app — the demo never left your laptop", false);
+  } else {
+    totalEl.value = u.total;
+    peopleEl.value = u.people;
+    var out = runSplit();
+    var ok = !!u.ok;
+    if (ok) survived++;
+    addEntry(u, ok ? out + " — " + u.note : "got " + out, ok);
+  }
+  updateVerdict();
+  if (nextUser >= USERS.length && timer) { clearInterval(timer); timer = null;
+    document.getElementById("all").textContent = "Let them all in ▸▸"; }
+}
+
+document.getElementById("demo").addEventListener("click", function () {
+  if (nextUser === 0) letUserIn();
+});
+document.getElementById("next").addEventListener("click", function () {
+  if (nextUser === 0) { letUserIn(); return; } // demo runs first — the arc needs the high point
+  letUserIn();
+});
+document.getElementById("all").addEventListener("click", function () {
+  if (timer) { clearInterval(timer); timer = null; this.textContent = "Let them all in ▸▸"; return; }
+  if (nextUser === 0) letUserIn();
+  this.textContent = "Pause ⏸";
+  timer = setInterval(letUserIn, 2200);
+});
+document.getElementById("reset").addEventListener("click", function () {
+  if (timer) { clearInterval(timer); timer = null;
+    document.getElementById("all").textContent = "Let them all in ▸▸"; }
+  nextUser = 0; survived = 0;
+  totalEl.value = ""; peopleEl.value = "";
+  resultEl.textContent = "—"; resultEl.className = "result";
+  frameEl.classList.remove("phone");
+  appcard.classList.remove("phone-mode");
+  feedEl.innerHTML = "<p class=\"feed-empty\">Nobody yet. Run the demo — it's a good demo.</p>";
+  vEl.className = "verdict";
+  vCount.textContent = "Survived: 0 of 0 users";
+  vMsg.textContent = "Every product you've ever seen demoed felt like this one is about to feel.";
+  document.getElementById("donemeans").classList.remove("show");
+});
+
+if (new URLSearchParams(location.search).has("present")) document.body.classList.add("present");
+</script>
+</body>
+</html>
