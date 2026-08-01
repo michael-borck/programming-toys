@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Context Porthole — it never heard you</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:#111a2e; --panel2:#0e1626; --line:#22304d;
+    --ink:#e6edf7; --muted:#93a4c3;
+    --accent:#fbbf24; --good:#34d399; --warn:#fbbf24; --bad:#f87171;
+    --user:#2dd4bf; --agent:#a78bfa;
+    --fs:16px;
+  }
+  body.present{--fs:20px;}
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:radial-gradient(1200px 800px at 30% -10%, #16223c 0%, var(--bg) 55%);
+    color:var(--ink); font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    font-size:var(--fs); line-height:1.5; min-height:100vh; padding:1.5em 1em 3em;
+  }
+  main{max-width:64em; margin:0 auto; display:flex; flex-direction:column; gap:1em;}
+  header{text-align:center; margin-bottom:.5em;}
+  header h1{font-size:1.6em; letter-spacing:.3px;}
+  header p{color:var(--muted); font-size:.95em; max-width:38em; margin:.35em auto 0;}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 16px;}
+  h3{font-size:.72em; text-transform:uppercase; letter-spacing:1.2px; color:var(--muted); margin-bottom:.6em;}
+  .role-user{border-color:color-mix(in srgb, var(--user) 45%, var(--line));}
+  .role-user h3{color:var(--user);}
+  .role-agent{border-color:color-mix(in srgb, var(--agent) 45%, var(--line));}
+  .role-agent h3{color:var(--agent);}
+
+  .chips{display:flex; flex-wrap:wrap; gap:.55em;}
+  button.chip{
+    font:inherit; font-size:.9em; color:var(--ink); background:var(--panel2); text-align:left;
+    border:1px solid color-mix(in srgb, var(--user) 45%, var(--line));
+    border-radius:10px; padding:.5em .8em; cursor:pointer; max-width:100%;
+  }
+  button.chip .hint{display:block; font-size:.78em; color:var(--muted);}
+  button.chip:hover{border-color:var(--user);}
+  button.chip:disabled{opacity:.4; cursor:default; text-decoration:line-through;}
+  button.chip.taste{border-style:dashed; border-color:color-mix(in srgb, var(--warn) 55%, var(--line));}
+  button.chip.taste .hint{color:var(--warn);}
+  .chip.wobble{animation:wobble .5s;}
+  @keyframes wobble{
+    0%,100%{transform:translateX(0);} 20%{transform:translateX(-.35em);}
+    40%{transform:translateX(.3em);} 60%{transform:translateX(-.2em);} 80%{transform:translateX(.1em);}
+  }
+  .headnote{color:var(--muted); font-size:.85em; margin-top:.7em;}
+
+  .files{display:grid; grid-template-columns:repeat(2,1fr); gap:.7em;}
+  @media (max-width:700px){ .files{grid-template-columns:1fr;} }
+  .file{background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:.6em .8em;}
+  .file .fname{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.85em;
+    color:var(--agent); margin-bottom:.35em;}
+  .file ul{list-style:none; display:flex; flex-direction:column; gap:.25em;}
+  .file li{font-size:.85em; color:var(--muted); padding-left:1em; position:relative;}
+  .file li::before{content:"·"; position:absolute; left:.2em; color:var(--agent);}
+  .file li.new{color:var(--user);}
+  .file li.new::before{color:var(--user); content:"+";}
+  .file li.empty{font-style:italic;}
+  .msgbox{margin-top:.7em; border:1px dashed color-mix(in srgb, var(--agent) 55%, var(--line));
+    border-radius:10px; padding:.55em .8em; font-size:.9em;}
+  .msgbox b{color:var(--agent);}
+  .porthole-cap{color:var(--muted); font-size:.85em; margin-top:.6em;}
+
+  .controls{display:flex; gap:.6em; flex-wrap:wrap; margin-top:.9em;}
+  button.act{
+    font:inherit; font-size:.95em; color:var(--ink); background:linear-gradient(180deg,#1a2a4a,#12203d);
+    border:1px solid #3b82f6; border-radius:9px; padding:.5em 1.1em; cursor:pointer;
+  }
+  button.ghost{
+    font:inherit; font-size:.95em; color:var(--muted); background:none;
+    border:1px solid var(--line); border-radius:9px; padding:.5em 1.1em; cursor:pointer;
+  }
+  button.ghost:hover{color:var(--ink);}
+
+  .work{display:flex; flex-direction:column; gap:.45em; min-height:5em;}
+  .work-empty{color:var(--muted); font-size:.88em; font-style:italic;}
+  .decision{font-size:.92em; padding-left:1.5em; position:relative;}
+  .decision::before{position:absolute; left:0; font-weight:700;}
+  .decision.ok{color:var(--ink);}
+  .decision.ok::before{content:"✓"; color:var(--good);}
+  .decision.ok .cite{color:var(--muted); font-size:.85em;}
+  .decision.broken::before{content:"✗"; color:var(--bad);}
+  .decision.broken .cite{display:block; color:var(--bad); font-size:.85em;}
+  .decision.judge{color:var(--muted);}
+  .decision.judge::before{content:"⚠"; color:var(--warn);}
+
+  .verdict{border-radius:14px; border:1px solid var(--line); padding:14px 16px; background:var(--panel);}
+  .verdict .count{font-size:.72em; text-transform:uppercase; letter-spacing:1.2px; color:var(--muted); margin-bottom:.35em;}
+  .verdict .msg{font-size:1.02em;}
+  .verdict.good{border-color:color-mix(in srgb, var(--good) 55%, var(--line));}
+  .verdict.good .count{color:var(--good);}
+  .verdict.bad{border-color:color-mix(in srgb, var(--bad) 55%, var(--line));
+    background:linear-gradient(180deg, color-mix(in srgb, var(--bad) 8%, var(--panel)), var(--panel));}
+  .verdict.bad .count{color:var(--bad);}
+
+  .closing{color:var(--muted); font-size:.92em;}
+  .closing b{color:var(--ink);}
+  footer{text-align:center; color:var(--muted); font-size:.8em; margin-top:1.5em;}
+  footer a{color:var(--user);}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Context Porthole</h1>
+    <p>You know everything about this project. Your agent is about to do a task for it. Count
+    what it actually sees.</p>
+  </header>
+
+  <section class="card role-user" aria-label="In your head">
+    <h3>In your head — 7 things you know</h3>
+    <div class="chips" id="chips"></div>
+    <p class="headnote">…plus 3 you already wrote down — they're in the folder below, which is
+    why they're about to go right.</p>
+  </section>
+
+  <section class="card role-agent" aria-label="The porthole">
+    <h3>The porthole — everything the agent will know</h3>
+    <div class="files">
+      <div class="file"><div class="fname">AGENTS.md</div><ul id="f-agents">
+        <li>Money is whole cents; shares sum to the exact total</li></ul></div>
+      <div class="file"><div class="fname">SPEC.md</div><ul id="f-spec">
+        <li class="empty">— nothing about tips —</li></ul></div>
+      <div class="file"><div class="fname">DECISIONS.md</div><ul id="f-decisions">
+        <li>No spreadsheet-looking grids</li></ul></div>
+      <div class="file"><div class="fname">checks/</div><ul id="f-checks">
+        <li>The checklist runs before anything is "done"</li></ul></div>
+    </div>
+    <div class="msgbox"><b>Your message:</b> "Add a 'settle up' screen showing who pays whom."</div>
+    <p class="porthole-cap">This card is the whole delivery. Nothing else exists for it — not
+    the phone call, not week one, not your face when you see a popup.</p>
+    <div class="controls">
+      <button class="act" id="send">Send it through the porthole ▸</button>
+      <button class="ghost" id="reset">Start over ⟲</button>
+    </div>
+  </section>
+
+  <section class="card" aria-label="What came back">
+    <h3>What came back</h3>
+    <div class="work" id="work"><p class="work-empty">Nothing yet — send the task.</p></div>
+  </section>
+
+  <section class="verdict" id="verdict" role="status" aria-live="polite">
+    <p class="count" id="v-count">Not sent yet</p>
+    <p class="msg" id="v-msg">You know 7 things. The porthole card shows 4 written lines and one
+      message. That's the whole delivery.</p>
+  </section>
+
+  <section class="card closing">
+    <p><b>The porthole is real</b> — it's called the <i>context window</i>. The agent doesn't
+    remember; it re-reads: each session it knows exactly what's in the folder plus what's in
+    your message, and nothing else. So when it gets something wrong, ask first: <b>could it have
+    known?</b> If the answer was in your head, the fix isn't a better scolding — it's a sentence
+    in a file. Fix the folder, not the chat. And the thing that can't be written down? That
+    rides along as you.</p>
+  </section>
+
+  <footer>
+    Part of <a href="../">programming-toys</a> · pairs with Labs 6 &amp; 7 — <i>Teach the
+    Intern</i> &amp; <i>Trust, Then Verify</i> · nothing leaves this page
+  </footer>
+</main>
+
+<script>
+"use strict";
+var FACTS = [
+  { id: "popups", chip: "The client hates popups — everything inline",
+    dest: "f-agents", destName: "AGENTS.md",
+    line: "Everything inline — never popups",
+    broken: "Opened the settle-up result in a popup dialog",
+    ok: "Kept everything inline", cite: "AGENTS.md" },
+  { id: "accounts", chip: "We rejected accounts and sign-in in week one",
+    dest: "f-decisions", destName: "DECISIONS.md",
+    line: "No accounts, no sign-in — rejected week one",
+    broken: "Added sign-in so people can “save their debts”",
+    ok: "No accounts", cite: "DECISIONS.md settled that in week one" },
+  { id: "tip", chip: "The default tip changed to 10% last Tuesday (phone call)",
+    dest: "f-spec", destName: "SPEC.md",
+    line: "Default tip is 10%",
+    broken: "Used the old 0% default tip",
+    ok: "Default tip 10%", cite: "SPEC.md" },
+];
+var TASTE = "It should feel premium — you'll know it when you see it";
+var PREWRITTEN = [
+  { ok: "Shares sum to the exact total", cite: "AGENTS.md" },
+  { ok: "Ran the checklist before saying done", cite: "checks/" },
+  { ok: "Avoided the grid layout", cite: "DECISIONS.md" },
+];
+
+var written = {};
+var sent = false;
+var chipsEl = document.getElementById("chips");
+var workEl = document.getElementById("work");
+var vEl = document.getElementById("verdict");
+var vCount = document.getElementById("v-count");
+var vMsg = document.getElementById("v-msg");
+
+FACTS.forEach(function (f) {
+  var b = document.createElement("button");
+  b.className = "chip";
+  b.type = "button";
+  b.id = "chip-" + f.id;
+  b.innerHTML = "<span class=\"hint\">click to write it into " + f.destName + "</span>";
+  b.insertBefore(document.createTextNode(f.chip), b.firstChild);
+  b.addEventListener("click", function () {
+    written[f.id] = true;
+    b.disabled = true;
+    var fileUl = document.getElementById(f.dest);
+    var emptyLine = fileUl.querySelector(".empty");
+    if (emptyLine) emptyLine.remove();
+    var li = document.createElement("li");
+    li.className = "new";
+    li.textContent = f.line;
+    fileUl.appendChild(li);
+    if (sent) run();
+  });
+  chipsEl.appendChild(b);
+});
+var tasteBtn = document.createElement("button");
+tasteBtn.className = "chip taste";
+tasteBtn.type = "button";
+tasteBtn.innerHTML = "<span class=\"hint\">try writing this one down</span>";
+tasteBtn.insertBefore(document.createTextNode(TASTE), tasteBtn.firstChild);
+tasteBtn.addEventListener("click", function () {
+  tasteBtn.classList.remove("wobble");
+  void tasteBtn.offsetWidth;
+  tasteBtn.classList.add("wobble");
+  tasteBtn.querySelector(".hint").textContent =
+    "there's no sentence for it — this one rides along as your judgement";
+});
+chipsEl.appendChild(tasteBtn);
+
+function run() {
+  sent = true;
+  workEl.innerHTML = "";
+  var mistakes = 0;
+  PREWRITTEN.forEach(function (p) { addDecision("ok", p.ok, p.cite); });
+  FACTS.forEach(function (f) {
+    if (written[f.id]) {
+      addDecision("ok", f.ok, f.cite);
+    } else {
+      mistakes++;
+      addDecision("broken", f.broken,
+        "the fact that would have prevented this was in your head");
+    }
+  });
+  addDecision("judge", "Does it feel premium? It can't know — that one's yours to look at.", "");
+  if (mistakes > 0) {
+    vEl.className = "verdict bad";
+    vCount.textContent = mistakes + " mistake" + (mistakes === 1 ? "" : "s");
+    vMsg.innerHTML = (mistakes === FACTS.length ?
+      "And every one traces to a fact that lived only in your head. " +
+      "<b>It didn't ignore you. It never heard you.</b> " :
+      mistakes + " fact" + (mistakes === 1 ? " is" : "s are") + " still only in your head. ") +
+      "Click a fact above to write it down — it re-sends by itself.";
+  } else {
+    vEl.className = "verdict good";
+    vCount.textContent = "0 mistakes";
+    vMsg.innerHTML = "<b>Every mistake was a missing sentence.</b> The amber line stays — " +
+      "what's left isn't a mistake, it's judgement, and it doesn't fit through any porthole.";
+  }
+  document.getElementById("send").textContent = "Send again ▸";
+}
+
+function addDecision(kind, text, cite) {
+  var div = document.createElement("div");
+  div.className = "decision " + kind;
+  div.innerHTML = "<span class=\"txt\"></span>" +
+    (cite ? " <span class=\"cite\"></span>" : "");
+  div.querySelector(".txt").textContent = text;
+  if (cite) div.querySelector(".cite").textContent =
+    (kind === "ok" ? "(" + cite + ")" : "— " + cite);
+  workEl.appendChild(div);
+}
+
+document.getElementById("send").addEventListener("click", run);
+document.getElementById("reset").addEventListener("click", function () { location.reload(); });
+
+if (new URLSearchParams(location.search).has("present")) document.body.classList.add("present");
+</script>
+</body>
+</html>

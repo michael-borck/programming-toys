@@ -16,7 +16,7 @@ lab, from a USB stick, or uploaded to an LMS as a single file.
 | **[Three Interpretations](three-interpretations/)** | "the AI knows what I meant" — one vague brief, three valid products; add spec lines and watch the space collapse | 3 | ✅ ready |
 | **[Next Word](next-word/)** | "it thinks like me" — watch next-word choice happen, dice and all, from boring to unhinged | 1 | ✅ ready |
 | **[Demo Illusion](demo-illusion/)** | "the demo is the product" — a shiny one-shot that really works, until real users arrive | 2 | ✅ ready |
-| **Context Porthole** | "it sees what I see" — everything you know vs the porthole the agent looks through | 6, 7 | 💡 designed |
+| **[Context Porthole](context-porthole/)** | "it sees what I see" — every mistake traces to a fact that lived only in your head | 6, 7 | ✅ ready |
 | **Confidence Dial** | "fluent = true" — statements at identical confidence; guess which are false | 7 | 💡 designed |
 | **Tiny Tweak** | "small change, small work" — request a 'tiny' change, watch the actual blast radius | 9 | 💡 designed |
 
