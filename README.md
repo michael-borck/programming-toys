@@ -14,7 +14,7 @@ lab, from a USB stick, or uploaded to an LMS as a single file.
 | Toy | Kills | Pairs with lab | Status |
 |---|---|:--:|:--:|
 | **[Three Interpretations](three-interpretations/)** | "the AI knows what I meant" — one vague brief, three valid products; add spec lines and watch the space collapse | 3 | ✅ ready |
-| **Next Word** | "it thinks like me" — watch next-token choice happen, from boring to unhinged | 1 | 💡 designed |
+| **[Next Word](next-word/)** | "it thinks like me" — watch next-word choice happen, dice and all, from boring to unhinged | 1 | ✅ ready |
 | **Demo Illusion** | "the demo is the product" — shiny app, then flip the *real users* toggle | 2 | 💡 designed |
 | **Context Porthole** | "it sees what I see" — everything you know vs the porthole the agent looks through | 6, 7 | 💡 designed |
 | **Confidence Dial** | "fluent = true" — statements at identical confidence; guess which are false | 7 | 💡 designed |

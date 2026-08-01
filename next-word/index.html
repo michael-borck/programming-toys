@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Next Word — there is no sentence in there</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:#111a2e; --panel2:#0e1626; --line:#22304d;
+    --ink:#e6edf7; --muted:#93a4c3;
+    --accent:#fbbf24; --good:#34d399; --warn:#fbbf24; --bad:#f87171;
+    --user:#2dd4bf; --agent:#a78bfa;
+    --fs:16px;
+  }
+  body.present{--fs:20px;}
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:radial-gradient(1200px 800px at 30% -10%, #16223c 0%, var(--bg) 55%);
+    color:var(--ink); font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    font-size:var(--fs); line-height:1.5; min-height:100vh; padding:1.5em 1em 3em;
+  }
+  main{max-width:60em; margin:0 auto; display:flex; flex-direction:column; gap:1em;}
+  header{text-align:center; margin-bottom:.5em;}
+  header h1{font-size:1.6em; letter-spacing:.3px;}
+  header p{color:var(--muted); font-size:.95em; max-width:36em; margin:.35em auto 0;}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 16px;}
+  h3{font-size:.72em; text-transform:uppercase; letter-spacing:1.2px; color:var(--muted); margin-bottom:.6em;}
+  .role-user{border-color:color-mix(in srgb, var(--user) 45%, var(--line));}
+  .role-user h3{color:var(--user);}
+  .role-agent{border-color:color-mix(in srgb, var(--agent) 45%, var(--line));}
+  .role-agent h3{color:var(--agent);}
+
+  .sentence{font-size:1.3em; line-height:1.6; min-height:2.6em;}
+  .sentence .prompt{color:var(--user);}
+  .sentence .gen{color:var(--agent); font-weight:600;}
+  .sentence .caret{display:inline-block; width:.5em; border-bottom:2px solid var(--agent);
+    animation:blink 1s steps(1) infinite; margin-left:.15em;}
+  @keyframes blink{50%{opacity:0;}}
+  .honesty{color:var(--muted); font-size:.85em; border-top:1px solid var(--line);
+    margin-top:.7em; padding-top:.6em;}
+
+  .dialrow{display:flex; align-items:center; gap:1em; flex-wrap:wrap;}
+  .diallabel{font-size:.9em; color:var(--muted); white-space:nowrap;}
+  input[type=range]{flex:1; min-width:12em; accent-color:var(--user);}
+  .dialvalue{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.95em;
+    color:var(--user); min-width:11em;}
+
+  .cands{display:flex; flex-direction:column; gap:.4em; min-height:10.5em;}
+  .cand{display:grid; grid-template-columns:8.5em 1fr 3.5em; align-items:center; gap:.7em;}
+  .cand .w{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.95em;
+    text-align:right; overflow:hidden; text-overflow:ellipsis;}
+  .cand .barwrap{background:var(--panel2); border:1px solid var(--line); border-radius:6px;
+    height:1.1em; overflow:hidden;}
+  .cand .bar{display:block; height:100%; background:linear-gradient(90deg,
+    color-mix(in srgb, var(--agent) 55%, var(--panel)), var(--agent));
+    width:0%; transition:width .25s;}
+  .cand .pct{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.85em;
+    color:var(--muted);}
+  .cand.picked .w{color:var(--good);}
+  .cand.picked .bar{background:linear-gradient(90deg,
+    color-mix(in srgb, var(--good) 55%, var(--panel)), var(--good));}
+  .forced-note{color:var(--muted); font-size:.82em; font-style:italic;}
+
+  .controls{display:flex; gap:.6em; flex-wrap:wrap; margin-top:.9em;}
+  button.act{
+    font:inherit; font-size:.95em; color:var(--ink); background:linear-gradient(180deg,#1a2a4a,#12203d);
+    border:1px solid #3b82f6; border-radius:9px; padding:.5em 1.1em; cursor:pointer;
+  }
+  button.act:disabled{opacity:.45; cursor:default;}
+  button.ghost{
+    font:inherit; font-size:.95em; color:var(--muted); background:none;
+    border:1px solid var(--line); border-radius:9px; padding:.5em 1.1em; cursor:pointer;
+  }
+  button.ghost:hover{color:var(--ink);}
+  .pickline{margin-top:.7em; font-size:.9em; color:var(--muted); min-height:1.5em;}
+  .pickline b{color:var(--ink);}
+
+  .runs{display:flex; flex-direction:column; gap:.45em;}
+  .run{display:flex; gap:.7em; align-items:baseline; font-size:.9em; flex-wrap:wrap;}
+  .run .dial{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; color:var(--user);
+    white-space:nowrap;}
+  .run .text{color:var(--muted);}
+  .run .text .tail{color:var(--ink);}
+  .run .dup{font-size:.82em; color:var(--warn); border:1px solid
+    color-mix(in srgb, var(--warn) 55%, transparent); border-radius:99px; padding:.05em .55em;
+    white-space:nowrap;}
+  .runs-empty{color:var(--muted); font-size:.88em; font-style:italic;}
+
+  .closing{color:var(--muted); font-size:.92em;}
+  .closing b{color:var(--ink);}
+  footer{text-align:center; color:var(--muted); font-size:.8em; margin-top:1.5em;}
+  footer a{color:var(--user);}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Next Word</h1>
+    <p>This is the whole job of the model inside every AI agent: given these words, pick the next
+    one. Watch it happen.</p>
+  </header>
+
+  <section class="card" aria-label="The sentence">
+    <h3>The sentence so far</h3>
+    <p class="sentence"><span class="prompt">To be successful, a business must</span><span
+      class="gen" id="gen"></span><span class="caret" id="caret"></span></p>
+    <p class="honesty">It has never read the end of its own sentence. There is only ever: given
+    these words, which word next?</p>
+  </section>
+
+  <section class="card role-user" aria-label="The dial">
+    <h3>Your dial — every AI product has one (it's called temperature)</h3>
+    <div class="dialrow">
+      <span class="diallabel">0 · Boring</span>
+      <input type="range" id="dial" min="0" max="3" step="0.1" value="1"
+        aria-label="Temperature dial from 0 boring to 3 unhinged">
+      <span class="diallabel">3 · Unhinged</span>
+      <span class="dialvalue" id="dialvalue"></span>
+    </div>
+  </section>
+
+  <section class="card role-agent" aria-label="The candidates">
+    <h3>The machine's shortlist for the next word</h3>
+    <div class="cands" id="cands"></div>
+    <div class="controls">
+      <button class="act" id="step">Next word ▸</button>
+      <button class="act" id="auto">Run to the end ▸▸</button>
+      <button class="ghost" id="reset">Start over ⟲</button>
+    </div>
+    <p class="pickline" id="pickline" role="status" aria-live="polite"></p>
+  </section>
+
+  <section class="card" aria-label="Finished runs">
+    <h3>Finished runs</h3>
+    <div class="runs" id="runs"><p class="runs-empty">None yet. Run one at Boring, run it again,
+      then nudge the dial and run a third.</p></div>
+  </section>
+
+  <section class="card closing">
+    <p><b>The lesson:</b> nothing in there wants to say anything — at 0 it repeats its favourite
+    word forever, above 0 it rolls dice you just watched. Real models do exactly this with about
+    50,000 word-pieces, a trillion-word reading habit, and thousands of rolls per answer — which
+    is <b>why the same request gives your classmate a different app</b>, and why sounding fluent
+    was never evidence of thinking. The fix isn't a better dial. It's better words from you.</p>
+  </section>
+
+  <footer>
+    Part of <a href="../">programming-toys</a> · pairs with Lab 1 — <i>Hello, Department of
+    One</i> · nothing leaves this page
+  </footer>
+</main>
+
+<script>
+"use strict";
+// Word graph: node -> [word, weight, nextNode|null]. Terminal words end the run.
+const NODES = {
+  root: [["understand",32,"und"],["listen",20,"lis"],["make",16,"mak"],["move",11,"mov"],
+         ["charge",9,"cha"],["befriend",6,"bef"],["outrun",4,"out"],["apologise",2,"apo"]],
+  und:  [["what",55,"uw"],["its",45,"ui"]],
+  uw:   [["its",60,"uwi"],["people",40,"uwp"]],
+  uwi:  [["customers",100,"uwic"]],
+  uwic: [["actually",65,"uwa"],["secretly",35,"uws"]],
+  uwa:  [["want.",100,null]],
+  uws:  [["need.",100,null]],
+  uwp:  [["refuse",55,"uwpr"],["secretly",45,"uwps"]],
+  uwpr: [["to",100,"uwprt"]],
+  uwprt:[["say.",100,null]],
+  uwps: [["want.",100,null]],
+  ui:   [["numbers",60,"uin"],["own",40,"uio"]],
+  uin:  [["before",100,"uinb"]],
+  uinb: [["its",100,"uinbi"]],
+  uinbi:[["numbers",100,"uinbn"]],
+  uinbn:[["understand",100,"uinbu"]],
+  uinbu:[["it.",100,null]],
+  uio:  [["story.",55,null],["appetite.",45,null]],
+  lis:  [["more",55,"lm"],["to",45,"lt"]],
+  lm:   [["than",100,"lmt"]],
+  lmt:  [["it",100,"lmti"]],
+  lmti: [["talks.",100,null]],
+  lt:   [["the",100,"ltt"]],
+  ltt:  [["quietest",60,"ltq"],["angriest",40,"lta"]],
+  ltq:  [["person",100,"ltqp"]],
+  ltqp: [["in",100,"ltqi"]],
+  ltqi: [["the",100,"ltqt"]],
+  ltqt: [["room.",100,null]],
+  lta:  [["customer",100,"ltac"]],
+  ltac: [["first.",100,null]],
+  mak:  [["something",60,"ms"],["a",40,"ma"]],
+  ms:   [["people",100,"msp"]],
+  msp:  [["would",100,"mspw"]],
+  mspw: [["miss",100,"mspm"]],
+  mspm: [["if",100,"mspi"]],
+  mspi: [["it",100,"mspt"]],
+  mspt: [["vanished.",70,null],["closed.",30,null]],
+  ma:   [["profit,",100,"map"]],
+  map:  [["eventually,",60,"mape"],["somehow.",40,null]],
+  mape: [["ideally",100,"mapi"]],
+  mapi: [["on",100,"mapo"]],
+  mapo: [["purpose.",100,null]],
+  mov:  [["faster",60,"mf"],["slowly",40,"msl"]],
+  mf:   [["than",100,"mft"]],
+  mft:  [["its",100,"mfti"]],
+  mfti: [["excuses.",60,null],["doubts.",40,null]],
+  msl:  [["and",100,"msla"]],
+  msla: [["fix",100,"mslf"]],
+  mslf: [["things.",100,null]],
+  cha:  [["what",60,"cw"],["enough",40,"ce"]],
+  cw:   [["it",100,"cwi"]],
+  cwi:  [["is",100,"cwis"]],
+  cwis: [["actually",100,"cwa"]],
+  cwa:  [["worth.",100,null]],
+  ce:   [["to",100,"cet"]],
+  cet:  [["survive",100,"ces"]],
+  ces:  [["its",100,"cesi"]],
+  cesi: [["own",100,"ceso"]],
+  ceso: [["success.",100,null]],
+  bef:  [["its",55,"bi"],["the",45,"bt"]],
+  bt:   [["weather.",60,null],["postman.",40,null]],
+  bi:   [["competitors'",100,"bic"]],
+  bic:  [["unhappy",100,"bicu"]],
+  bicu: [["customers.",100,null]],
+  out:  [["the",100,"ot"]],
+  ot:   [["rumour",100,"otr"]],
+  otr:  [["of",100,"otro"]],
+  otro: [["its",100,"otri"]],
+  otri: [["own",100,"otrn"]],
+  otrn: [["decline.",100,null]],
+  apo:  [["to",100,"at"]],
+  at:   [["the",100,"att"]],
+  att:  [["ocean.",55,null],["intern.",45,null]],
+};
+
+const genEl = document.getElementById("gen");
+const caretEl = document.getElementById("caret");
+const candsEl = document.getElementById("cands");
+const dialEl = document.getElementById("dial");
+const dialValueEl = document.getElementById("dialvalue");
+const pickEl = document.getElementById("pickline");
+const runsEl = document.getElementById("runs");
+const stepBtn = document.getElementById("step");
+const autoBtn = document.getElementById("auto");
+
+let node = "root";
+let words = [];
+let runs = [];
+let timer = null;
+
+function temperature() { return parseFloat(dialEl.value); }
+
+function adjusted(options) {
+  const t = temperature();
+  if (t === 0) {
+    let best = 0;
+    options.forEach((o, i) => { if (o[1] > options[best][1]) best = i; });
+    return options.map((o, i) => i === best ? 1 : 0);
+  }
+  const powered = options.map(o => Math.pow(o[1], 1 / t));
+  const sum = powered.reduce((a, b) => a + b, 0);
+  return powered.map(p => p / sum);
+}
+
+function renderDial() {
+  const t = temperature();
+  dialValueEl.textContent = t === 0 ? "0.0 — no dice, ever" : t.toFixed(1) + (t >= 2 ? " — chaos" : "");
+}
+
+function renderCandidates(pickedWord) {
+  const options = NODES[node] || [];
+  const probs = adjusted(options);
+  const rows = options.map((o, i) => ({ w: o[0], p: probs[i] }))
+    .sort((a, b) => b.p - a.p);
+  candsEl.innerHTML = "";
+  rows.forEach(r => {
+    const div = document.createElement("div");
+    div.className = "cand" + (r.w === pickedWord ? " picked" : "");
+    div.innerHTML = "<span class=\"w\"></span>" +
+      "<span class=\"barwrap\"><span class=\"bar\"></span></span>" +
+      "<span class=\"pct\"></span>";
+    div.querySelector(".w").textContent = r.w;
+    div.querySelector(".pct").textContent = (r.p * 100).toFixed(0) + "%";
+    candsEl.appendChild(div);
+    requestAnimationFrame(() => { div.querySelector(".bar").style.width = (r.p * 100) + "%"; });
+  });
+  if (options.length === 1) {
+    const note = document.createElement("p");
+    note.className = "forced-note";
+    note.textContent = "One candidate — mid-sentence, the next word is often practically forced. Fluency is momentum, not intent.";
+    candsEl.appendChild(note);
+  }
+}
+
+function sample() {
+  const options = NODES[node];
+  const probs = adjusted(options);
+  const r = Math.random();
+  let acc = 0;
+  for (let i = 0; i < options.length; i++) {
+    acc += probs[i];
+    if (r <= acc) return { option: options[i], p: probs[i] };
+  }
+  return { option: options[options.length - 1], p: probs[options.length - 1] };
+}
+
+function step() {
+  if (!node) return;
+  const before = node;
+  const { option, p } = sample();
+  words.push(option[0]);
+  node = option[2];
+  genEl.textContent = " " + words.join(" ");
+  const t = temperature();
+  pickEl.innerHTML = "chose <b></b> — " + (t === 0 ? "the favourite, no dice" :
+    "had a " + (p * 100).toFixed(0) + "% chance");
+  pickEl.querySelector("b").textContent = "“" + option[0] + "”";
+  if (node) {
+    // show what the pick looked like among its rivals, then the fresh shortlist
+    node = before; renderCandidates(option[0]); node = option[2];
+    setTimeout(() => { if (node) renderCandidates(null); }, 450);
+  } else {
+    finishRun();
+  }
+}
+
+function finishRun() {
+  caretEl.style.display = "none";
+  stepBtn.disabled = true;
+  autoBtn.disabled = true;
+  if (timer) { clearInterval(timer); timer = null; autoBtn.textContent = "Run to the end ▸▸"; }
+  const text = words.join(" ");
+  const dup = runs.findIndex(r => r.text === text);
+  runs.push({ text: text, dial: temperature().toFixed(1), dup: dup });
+  renderRuns();
+  const t = temperature();
+  if (dup >= 0 && t === 0) {
+    pickEl.innerHTML = "<b>Identical to run " + (dup + 1) + ".</b> At 0 there are no dice — run it " +
+      "forever, get this sentence forever. Now nudge the dial one notch and go again.";
+  } else if (dup >= 0) {
+    pickEl.innerHTML = "<b>Identical to run " + (dup + 1) + ".</b> Nothing “decided” that — the dice " +
+      "just happened to fall the same way.";
+  } else {
+    pickEl.innerHTML = "Done. Same prompt next time, " + (t === 0 ?
+      "same sentence — guaranteed." : "and the dice roll again. Start over and see.");
+  }
+  renderCandidates(null);
+}
+
+function renderRuns() {
+  runsEl.innerHTML = "";
+  runs.forEach((r, i) => {
+    const div = document.createElement("div");
+    div.className = "run";
+    div.innerHTML = "<span class=\"dial\"></span><span class=\"text\">To be successful, a business " +
+      "must <span class=\"tail\"></span></span>" + (r.dup >= 0 ? " <span class=\"dup\"></span>" : "");
+    div.querySelector(".dial").textContent = "🎛 " + r.dial;
+    div.querySelector(".tail").textContent = r.text;
+    if (r.dup >= 0) div.querySelector(".dup").textContent = "identical to run " + (r.dup + 1);
+    runsEl.appendChild(div);
+  });
+}
+
+function reset() {
+  if (timer) { clearInterval(timer); timer = null; autoBtn.textContent = "Run to the end ▸▸"; }
+  node = "root";
+  words = [];
+  genEl.textContent = "";
+  caretEl.style.display = "";
+  stepBtn.disabled = false;
+  autoBtn.disabled = false;
+  pickEl.textContent = "";
+  renderCandidates(null);
+}
+
+stepBtn.addEventListener("click", step);
+autoBtn.addEventListener("click", () => {
+  if (timer) { clearInterval(timer); timer = null; autoBtn.textContent = "Run to the end ▸▸"; return; }
+  autoBtn.textContent = "Pause ⏸";
+  timer = setInterval(() => { if (node) step(); }, 600);
+});
+document.getElementById("reset").addEventListener("click", reset);
+dialEl.addEventListener("input", () => { renderDial(); if (node) renderCandidates(null); });
+
+renderDial();
+renderCandidates(null);
+if (new URLSearchParams(location.search).has("present")) document.body.classList.add("present");
+</script>
+</body>
+</html>
