@@ -18,7 +18,7 @@ lab, from a USB stick, or uploaded to an LMS as a single file.
 | **[Demo Illusion](demo-illusion/)** | "the demo is the product" — a shiny one-shot that really works, until real users arrive | 2 | ✅ ready |
 | **[Context Porthole](context-porthole/)** | "it sees what I see" — every mistake traces to a fact that lived only in your head | 6, 7 | ✅ ready |
 | **[Confidence Dial](confidence-dial/)** | "fluent = true" — grade eight equally confident claims and find out what fluency is worth | 7 | ✅ ready |
-| **Tiny Tweak** | "small change, small work" — request a 'tiny' change, watch the actual blast radius | 9 | 💡 designed |
+| **[Tiny Tweak](tiny-tweak/)** | "small change, small work" — guess how big six 'quick ones' really are | 9 | ✅ ready |
 
 Add `?present` to any toy (e.g. `three-interpretations/?present`) to bump type sizes for a
 projector.

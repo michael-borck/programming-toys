@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tiny Tweak — the inside decides, and you can't see the inside</title>
+<style>
+  :root{
+    --bg:#0b1220; --panel:#111a2e; --panel2:#0e1626; --line:#22304d;
+    --ink:#e6edf7; --muted:#93a4c3;
+    --accent:#fbbf24; --good:#34d399; --warn:#fbbf24; --bad:#f87171;
+    --user:#2dd4bf; --agent:#a78bfa;
+    --fs:16px;
+  }
+  body.present{--fs:20px;}
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:radial-gradient(1200px 800px at 30% -10%, #16223c 0%, var(--bg) 55%);
+    color:var(--ink); font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    font-size:var(--fs); line-height:1.5; min-height:100vh; padding:1.5em 1em 3em;
+  }
+  main{max-width:56em; margin:0 auto; display:flex; flex-direction:column; gap:1em;}
+  header{text-align:center; margin-bottom:.5em;}
+  header h1{font-size:1.6em; letter-spacing:.3px;}
+  header p{color:var(--muted); font-size:.95em; max-width:36em; margin:.35em auto 0;}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 16px;}
+  h3{font-size:.72em; text-transform:uppercase; letter-spacing:1.2px; color:var(--muted); margin-bottom:.6em;}
+  .role-agent{border-color:color-mix(in srgb, var(--agent) 45%, var(--line));}
+  .role-agent h3{color:var(--agent);}
+
+  .mock{background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:.8em;
+    font-size:.8em; display:flex; flex-direction:column; gap:.45em; max-width:24em;}
+  .mock .apptitle{font-weight:700; color:var(--agent);}
+  .mock .field{display:flex; justify-content:space-between; background:var(--panel);
+    border:1px solid var(--line); border-radius:7px; padding:.3em .55em; color:var(--muted);}
+  .mock .btn{text-align:center; background:#b25b2e; color:#fff; border-radius:7px; padding:.35em;
+    font-weight:700;}
+  .mock .row{display:flex; justify-content:space-between; border-bottom:1px dashed var(--line);
+    padding:.2em .1em; color:var(--muted);}
+  .mock .cheers{color:var(--good); text-align:center; font-size:.9em;}
+  .mockcap{color:var(--muted); font-size:.85em; margin-top:.6em;}
+
+  .legend{display:flex; gap:1.2em; flex-wrap:wrap; color:var(--muted); font-size:.85em;}
+  .legend b{color:var(--ink);}
+
+  .req{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:.8em 1em;}
+  .req .q{margin-bottom:.6em;}
+  .req .q .n{color:var(--agent);}
+  .guesses{display:flex; gap:.5em;}
+  button.guess{
+    font:inherit; font-size:.88em; color:var(--muted); background:var(--panel2);
+    border:1px solid var(--line); border-radius:99px; padding:.3em 1.1em; cursor:pointer;
+  }
+  button.guess:hover{color:var(--ink);}
+  button.guess[aria-pressed="true"]{
+    color:var(--ink); border-color:#3b82f6; background:linear-gradient(180deg,#1a2a4a,#12203d);
+    box-shadow:0 0 0 1px #3b82f655;
+  }
+  .strip{display:none; margin-top:.65em; border-top:1px dashed var(--line); padding-top:.55em;
+    font-size:.88em;}
+  .req.revealed .strip{display:block;}
+  .strip .v{font-weight:800;}
+  .strip .v.s{color:var(--good);} .strip .v.m{color:var(--warn);} .strip .v.l{color:var(--bad);}
+  .strip .facts{color:var(--muted);}
+  .strip .facts b{color:var(--ink);}
+  .strip ul{list-style:none; margin-top:.3em;}
+  .strip li{padding-left:1.3em; position:relative; color:var(--agent);}
+  .strip li::before{content:"↳"; position:absolute; left:.15em;}
+  .req.revealed.got{border-color:color-mix(in srgb, var(--good) 35%, var(--line));}
+  .req.revealed.missed{border-color:color-mix(in srgb, var(--bad) 35%, var(--line));}
+  .youcall{color:var(--muted); font-size:.85em;}
+  .youcall b{color:var(--ink);}
+
+  .verdict{border-radius:14px; border:1px solid var(--line); padding:14px 16px; background:var(--panel);}
+  .verdict .count{font-size:.72em; text-transform:uppercase; letter-spacing:1.2px; color:var(--muted); margin-bottom:.35em;}
+  .verdict .msg{font-size:1.02em;}
+  .verdict.scored{border-color:color-mix(in srgb, var(--warn) 55%, var(--line));}
+  .verdict.scored .count{color:var(--warn);}
+
+  .closing{color:var(--muted); font-size:.92em;}
+  .closing b{color:var(--ink);}
+  footer{text-align:center; color:var(--muted); font-size:.8em; margin-top:1.5em;}
+  footer a{color:var(--user);}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Tiny Tweak</h1>
+    <p>Six client requests, all "quick ones". Guess how big each really is: the inside decides —
+    and you can't see the inside.</p>
+  </header>
+
+  <section class="card role-agent" aria-label="The product">
+    <h3>The product — a coffee-run order page, working fine</h3>
+    <div class="mock" aria-hidden="true">
+      <div class="apptitle">BrewCrew — office coffee runs</div>
+      <div class="field"><span>Name</span><span>Sam</span></div>
+      <div class="field"><span>Drink</span><span>flat white · $4.50</span></div>
+      <div class="btn">Add to the run</div>
+      <div class="row"><span>Sam — flat white</span><span>$4.50</span></div>
+      <div class="row"><span>Priya — long black (large)</span><span>$4.50</span></div>
+      <div class="row"><b>Total</b><b>$9.00</b></div>
+      <div class="btn" style="background:#33415e">Copy for the café 📋</div>
+      <div class="cheers">Cheers! Order copied.</div>
+    </div>
+    <p class="mockcap">This is all you can see. It's all any client ever sees. Now size some
+    changes.</p>
+  </section>
+
+  <section class="card">
+    <div class="legend"><span><b>S</b> — 1–2 spots touched</span><span><b>M</b> — 3–5
+      spots</span><span><b>L</b> — 6+ spots, or a question the code can't answer</span></div>
+  </section>
+
+  <div id="reqs" style="display:flex; flex-direction:column; gap:.7em;"></div>
+
+  <section class="verdict" id="verdict" role="status" aria-live="polite">
+    <p class="count" id="v-count">Sized: 0 of 6</p>
+    <p class="msg" id="v-msg">Commit to a size before you peek. Your client voice already said
+      "shouldn't take long, yeah?" — now check it.</p>
+  </section>
+
+  <section class="card closing" id="closing" hidden>
+    <p><b>The pro move</b> — before saying "just quickly", ask the agent:
+    <i>"what does this actually touch?"</i> The inside is invisible from where you stand, but it
+    answers questions — in seconds, for free, every time. <b>The lesson:</b> "small change,
+    small work" assumes the outside predicts the inside. It never did, in any era of
+    programming — the notation changed, the iceberg didn't.</p>
+  </section>
+
+  <footer>
+    Part of <a href="../">programming-toys</a> · pairs with Lab 9 — <i>The Last 20%</i> ·
+    nothing leaves this page
+  </footer>
+</main>
+
+<script>
+"use strict";
+var REQS = [
+  { t: "Make the Add button blue instead of orange.", truth: "S", spots: 1, lines: "1 line",
+    ripple: ["Nothing else. Sometimes tiny is tiny — the point is you couldn't know from out here."] },
+  { t: "Change the “Cheers!” at the end to say “Thanks!” instead.", truth: "M", spots: 3, lines: "3 lines",
+    ripple: ["The word lives in the banner, the copied café summary, and the receipt.",
+      "Miss one and the product disagrees with itself."] },
+  { t: "Add oat milk (+$0.50) as an option.", truth: "M", spots: 5, lines: "~12 lines",
+    ripple: ["Options list, price table, order rows, the copied summary…",
+      "…and anything that touches money touches the checks."] },
+  { t: "Show prices in euros as well.", truth: "L", spots: 9, lines: "~40 lines",
+    ripple: ["Every price appears twice; totals, summary and phone layout all squeeze.",
+      "Plus a question no code can answer: whose exchange rate, updated when?"] },
+  { t: "Let people edit a drink after adding it.", truth: "L", spots: 7, lines: "~60 lines",
+    ripple: ["New state, edit controls on every row, totals that update live.",
+      "Brand-new failure modes — edit a name to empty? — and checks for all of it."] },
+  { t: "Remember my usual order.", truth: "L", spots: 8, lines: "~45 lines",
+    ripple: ["Storage, first-run behaviour, a forget button — it's personal data now.",
+      "And what happens when prices changed since last time? Ten lines of feature; the consequences are the product."] },
+];
+var NAMES = { S: "SMALL", M: "MEDIUM", L: "LARGE" };
+var answered = 0, score = 0;
+var reqsEl = document.getElementById("reqs");
+
+REQS.forEach(function (r, i) {
+  var div = document.createElement("div");
+  div.className = "req";
+  div.innerHTML =
+    "<p class=\"q\"><span class=\"n\">" + (i + 1) + ".</span> <span class=\"qt\"></span></p>" +
+    "<div class=\"guesses\">" +
+    ["S", "M", "L"].map(function (g) {
+      return "<button class=\"guess\" type=\"button\" aria-pressed=\"false\" data-g=\"" + g + "\">" + g + "</button>";
+    }).join("") + "</div><div class=\"strip\"></div>";
+  div.querySelector(".qt").textContent = "“" + r.t + "”";
+  div.querySelectorAll(".guess").forEach(function (b) {
+    b.addEventListener("click", function () {
+      if (div.classList.contains("revealed")) return;
+      b.setAttribute("aria-pressed", "true");
+      var right = b.dataset.g === r.truth;
+      if (right) score++;
+      answered++;
+      div.classList.add("revealed", right ? "got" : "missed");
+      var strip = div.querySelector(".strip");
+      strip.innerHTML = "<span class=\"v " + r.truth.toLowerCase() + "\">" + NAMES[r.truth] +
+        "</span> <span class=\"facts\">— <b>" + r.spots + "</b> spot" + (r.spots > 1 ? "s" : "") +
+        " touched, <b>" + r.lines + "</b>.</span> <span class=\"youcall\">You said <b>" +
+        b.dataset.g + "</b>, " + (right ? "right." : "wrong.") + "</span><ul>" +
+        r.ripple.map(function () { return "<li></li>"; }).join("") + "</ul>";
+      strip.querySelectorAll("li").forEach(function (li, k) { li.textContent = r.ripple[k]; });
+      update();
+    });
+  });
+  reqsEl.appendChild(div);
+});
+
+function update() {
+  var v = document.getElementById("verdict");
+  var count = document.getElementById("v-count");
+  var msg = document.getElementById("v-msg");
+  if (answered < REQS.length) {
+    count.textContent = "Sized: " + answered + " of 6 · right so far: " + score;
+    msg.textContent = "Keep going — commit before you peek.";
+    return;
+  }
+  v.className = "verdict scored";
+  count.textContent = "Your score: " + score + " of 6";
+  var text;
+  if (score <= 2) {
+    text = "The outside told you nothing — as it tells everyone. “Just quickly” has cost the " +
+      "industry more than any bug.";
+  } else if (score <= 4) {
+    text = "Half right — and every miss was a sincere promise you'd have made to a client " +
+      "with a straight face.";
+  } else {
+    text = "Sharp. But notice you were measuring guesses about what the code hides — the " +
+      "agent will just tell you the insides. Ask.";
+  }
+  msg.textContent = text + " The fix isn't better guessing — ask what it touches.";
+  document.getElementById("closing").hidden = false;
+}
+
+if (new URLSearchParams(location.search).has("present")) document.body.classList.add("present");
+</script>
+</body>
+</html>
