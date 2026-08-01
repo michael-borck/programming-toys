@@ -1,7 +1,7 @@
 # Programming Toys
 
 > **Part of the Speak Software series** — twelve hands-on labs teaching programming at the
-> natural-language level, in [`programming-labs`](../programming-labs/).
+> natural-language level, in [`programming-labs`](https://github.com/michael-borck/programming-labs).
 
 Small self-contained web pages, each built to break **one** specific misconception about
 programming with AI that lecture slides reliably fail to break.
