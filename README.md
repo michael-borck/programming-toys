@@ -3,6 +3,8 @@
 > **Part of the Speak Software series** — twelve hands-on labs teaching programming at the
 > natural-language level, in [`programming-labs`](https://github.com/michael-borck/programming-labs).
 
+**▶ [programmingtoys.borck.education](https://programmingtoys.borck.education/)**
+
 Small self-contained web pages, each built to break **one** specific misconception about
 programming with AI that lecture slides reliably fail to break.
 
@@ -64,6 +66,13 @@ labs provide the live experience; the toys provide the guaranteed one.
 No test framework (the check is manual: opens from `file://`, works with no network, readable at
 1024×768 on a projector, usable on a phone, keyboard-navigable). No analytics. No framework, no
 build step. No backend.
+
+## Related
+
+Part of [programming.borck.education](https://programming.borck.education). The labs these toys
+pair with live at [programminglabs.borck.education](https://programminglabs.borck.education).
+Sibling collections: [security-toys](https://securitytoys.borck.education), which set the pattern,
+and [ai-toys](https://aitoys.borck.education), which applies it to AI/ML misconceptions.
 
 ## Licence
 
